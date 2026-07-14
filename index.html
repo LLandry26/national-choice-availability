@@ -362,6 +362,17 @@
     gap:12px;
   }
   .metric-row:last-of-type{border-bottom:none;}
+  .metric-row-tabhighlight{
+    background:rgba(193,150,47,0.16);
+    margin:2px -14px;
+    padding:10px 14px;
+    border-radius:6px;
+    border-bottom:none !important;
+    border-left:3px solid var(--gold);
+    padding-left:11px;
+  }
+  .metric-row-tabhighlight .metric-label{color:#f0dca8;}
+  .metric-row-tabhighlight .metric-value{color:var(--gold); font-weight:700;}
   .metric-row-emphasis{
     background:rgba(163,67,47,0.18);
     margin:4px -14px;
@@ -462,7 +473,7 @@
         <button class="tab-btn" data-tab="budget">Budget</button>
       </div>
       <div class="subtoggle" id="elig-subtoggle">
-        <button class="sub-btn" data-sub="statute">By statute</button>
+        <button class="sub-btn" data-sub="statute">By Statute</button>
         <button class="sub-btn active" data-sub="truly">Max Capacity</button>
       </div>
     </div>
@@ -719,12 +730,12 @@ function renderPanel(abbr){
     html += '<div style="margin:-6px 0 16px;">' + utilizationBadge(s.utilization) + '</div>';
   }
 
-  html += metricRow('Eligible by statute', fmtPct(s.pctEligibleStatute));
-  html += metricRow('Max capacity (cap-adjusted)', fmtPct(s.pctTrulyEligible));
+  html += metricRow('Eligible by statute', fmtPct(s.pctEligibleStatute), 'eligibility-statute');
+  html += metricRow('Max capacity (cap-adjusted)', fmtPct(s.pctTrulyEligible), 'eligibility-truly');
   if(s.pctEligibleStatute!==null && s.pctTrulyEligible!==null && s.pctEligibleStatute > s.pctTrulyEligible + 0.01){
     html += '<div class="gap-note">Gap: caps &amp; limits cut eligibility by ' + fmtPct(s.pctEligibleStatute - s.pctTrulyEligible) + '</div>';
   }
-  html += metricRow('Participating (% of all K\u201312)', fmtPct(s.pctParticipating));
+  html += metricRow('Participating (% of all K\u201312)', fmtPct(s.pctParticipating), 'participation');
   html += metricRow('Students receiving choice', fmtNum(s.totalParticipation));
   html += metricRow('Total K\u201312 enrollment', fmtNum(s.totalEnrollment));
   html += metricRowEmphasis('Ineligible by statute', fmtNum(s.withoutChoiceStatute));
@@ -732,9 +743,9 @@ function renderPanel(abbr){
   if(s.withoutChoiceStatute !== null && s.withoutChoiceCapsLimits !== null && (s.withoutChoiceStatute > 0 || s.withoutChoiceCapsLimits > 0)){
     html += '<div class="gap-note" style="color:#aeb7c8;">These overlap (caps &amp; limitations includes students already counted as ineligible by statute) &mdash; they should not be added together.</div>';
   }
-  html += metricRow('K\u201312 education budget', fmtMoney(s.k12Budget));
-  html += metricRow('Total choice program cost', fmtMoney(s.choiceCost));
-  html += metricRow('Share of budget on choice', fmtPct(s.pctBudgetOnChoice));
+  html += metricRow('K\u201312 education budget', fmtMoney(s.k12Budget), 'budget');
+  html += metricRow('Total choice program cost', fmtMoney(s.choiceCost), 'budget');
+  html += metricRow('Share of budget on choice', fmtPct(s.pctBudgetOnChoice), 'budget');
 
   if(s.notes){
     html += '<div class="panel-notes"><strong>Program notes:</strong> '+s.notes+'</div>';
@@ -750,11 +761,17 @@ function utilizationBadge(text){
   else if(t.includes('underutilized')) color = '#2e5c8a';   // blue -- funded but under-enrolled
   return '<span style="display:inline-block; padding:3px 11px; border-radius:999px; font-size:11px; font-weight:700; font-family:Inter,sans-serif; color:#fff; background:'+color+';">'+text+'</span>';
 }
-function metricRow(label,value){
-  return '<div class="metric-row"><span class="metric-label">'+label+'</span><span class="metric-value">'+value+'</span></div>';
+function activeHighlightKey(){
+  if(currentTab === 'eligibility') return 'eligibility-' + currentSub;
+  return currentTab;
 }
-function metricRowEmphasis(label,value){
-  return '<div class="metric-row metric-row-emphasis"><span class="metric-label">'+label+'</span><span class="metric-value metric-value-emphasis">'+value+'</span></div>';
+function metricRow(label,value,tag){
+  const hl = (tag && tag === activeHighlightKey()) ? ' metric-row-tabhighlight' : '';
+  return '<div class="metric-row'+hl+'"><span class="metric-label">'+label+'</span><span class="metric-value">'+value+'</span></div>';
+}
+function metricRowEmphasis(label,value,tag){
+  const hl = (tag && tag === activeHighlightKey()) ? ' metric-row-tabhighlight' : '';
+  return '<div class="metric-row metric-row-emphasis'+hl+'"><span class="metric-label">'+label+'</span><span class="metric-value metric-value-emphasis">'+value+'</span></div>';
 }
 
 function selectState(abbr){
@@ -809,6 +826,7 @@ document.getElementById('elig-subtoggle').addEventListener('click', (e)=>{
   btn.classList.add('active');
   currentSub = btn.dataset.sub;
   paintMap();
+  if(selectedState) renderPanel(selectedState);
 });
 
 const select = document.getElementById('state-select');
